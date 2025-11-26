@@ -27,7 +27,7 @@ public class ImageUploadService {
 
         Map uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
-                ObjectUtils.asMap("folder", "ecommerce_products")   // folder in cloudinary
+                ObjectUtils.asMap("folder", "ecommerce_products") 
         );
 
         return uploadResult.get("secure_url").toString();
