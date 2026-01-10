@@ -1,5 +1,6 @@
 package com.example.Product_Service.Service;
 
+import com.example.Product_Service.Exception.ImageUploadException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,10 +25,13 @@ public class ImageUploadService {
     private Cloudinary cloudinary;
 
     public String uploadImage(MultipartFile file) throws IOException {
+        if (file.isEmpty()) {
+            throw new ImageUploadException("Image file is empty");
+        }
 
         Map uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
-                ObjectUtils.asMap("folder", "ecommerce_products")   // folder in cloudinary
+                ObjectUtils.asMap("folder", "ecommerce_products")   
         );
 
         return uploadResult.get("secure_url").toString();
