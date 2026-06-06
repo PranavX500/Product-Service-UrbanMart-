@@ -42,7 +42,7 @@ public class ProductConsumer {
                       product.getId(),
                       product.getProductName(),
                       product.getPrice(),
-
+                      quantityMap.getOrDefault(product.getId(), product.getQuantity()),
                       product.getDescription(),
                       product.getBrand(),
                       product.getImageUrl(),

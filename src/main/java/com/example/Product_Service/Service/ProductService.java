@@ -8,6 +8,8 @@ import com.example.Product_Service.Model.Categories;
 import com.example.Product_Service.Model.Product;
 import com.example.Product_Service.Repositery.ProductRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +21,7 @@ public class ProductService {
     @Autowired
     private ProductRepo productRepo;
 
-
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductDto Createproduct(ProductDto productDto) {
         Product product = new Product();
         product.setProductName(productDto.getProductName());
@@ -47,6 +49,7 @@ public class ProductService {
     }
 
 
+    @Cacheable(cacheNames = "products", key = "'brand:' + #brand")
     public List<ProductDto> findByBrand(String brand) {
         List<Product> products = productRepo.findByBrand(brand);
 
@@ -58,6 +61,7 @@ public class ProductService {
     }
 
 
+    @Cacheable(cacheNames = "products", key = "'all'")
     public List<ProductDto> findByAll() {
         List<Product> products = productRepo.findAll();
 
@@ -69,6 +73,7 @@ public class ProductService {
     }
 
 
+    @Cacheable(cacheNames = "products", key = "'top5:' + #categories.name()")
     public List<ProductDto> findBytop5(Categories categories) {
         List<Product> products = productRepo.findTop5ByCategories(categories);
 
@@ -80,6 +85,7 @@ public class ProductService {
     }
 
 
+    @Cacheable(cacheNames = "products", key = "'name:' + #productName")
     public ProductDto findByProductName(String productName) {
         Product product = productRepo.findByProductName(productName)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found: " + productName));
@@ -87,6 +93,7 @@ public class ProductService {
     }
 
 
+    @Cacheable(cacheNames = "products", key = "'id:' + #id")
     public ProductDto findById(Long id) {
         Product product = productRepo.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
@@ -94,6 +101,7 @@ public class ProductService {
     }
 
 
+    @Cacheable(cacheNames = "products", key = "'ids:' + #ids.toString()")
     public List<ProductDto> getProductsByIds(List<Long> ids) {
         List<Product> products = productRepo.findByIdIn(ids);
 
@@ -105,6 +113,7 @@ public class ProductService {
     }
 
 
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductDto UpdateProduct(Long id, ProductDto productDto) {
         Product product = productRepo.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
@@ -118,6 +127,7 @@ public class ProductService {
     }
 
 
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public String deleteProduct(Long id) {
         Product product = productRepo.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
@@ -127,6 +137,7 @@ public class ProductService {
     }
 
 
+    @Cacheable(cacheNames = "products", key = "'category:' + #category.toUpperCase()")
     public List<ProductDto> findAllByCategory(String category) {
         Categories categoriesEnum;
         try {
@@ -164,15 +175,17 @@ public class ProductService {
             int page,
             int size
     ) {
+        double lowerPrice = Math.min(minPrice, maxPrice);
+        double upperPrice = Math.max(minPrice, maxPrice);
         Pageable pageable = PageRequest.of(page, size, Sort.by("price").ascending());
 
         Page<Product> products = productRepo.findProductBetweenPrice(
-                categories, minPrice, maxPrice, pageable
+                categories, lowerPrice, upperPrice, pageable
         );
 
         if (products.isEmpty()) {
             throw new ProductNotFoundException(
-                    "No products found in " + categories + " between " + minPrice + " and " + maxPrice
+                    "No products found in " + categories + " between " + lowerPrice + " and " + upperPrice
             );
         }
 

@@ -185,6 +185,24 @@ class ProductServiceTest {
         assertTrue(exception.getMessage().contains("No products found in ELECTRONICS between 1000.0 and 2000.0"));
     }
 
+    @Test
+    void findProductPriceBetweenNormalizesReversedPrices() {
+        Page<Product> page = new PageImpl<>(
+                List.of(product(3L, "Toy Car", 1500.0, "Hot Wheels", Categories.TOYS))
+        );
+        when(productRepo.findProductBetweenPrice(
+                eq(Categories.TOYS),
+                eq(0.0),
+                eq(2000.0),
+                any(Pageable.class)
+        )).thenReturn(page);
+
+        Page<ProductDto> result = productService.findProductPriceBetween(Categories.TOYS, 2000.0, 0.0, 0, 5);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Toy Car", result.getContent().get(0).getProductName());
+    }
+
     private Product product(Long id, String name, Double price, String brand, Categories category) {
         Product product = new Product();
         product.setId(id);

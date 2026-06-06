@@ -53,13 +53,13 @@ public class KafkaConfig {
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, ListSuccessEvent> kafkaListenerContainerFactory(
-            DefaultErrorHandler errorHandler) {
+            DefaultErrorHandler kafkaErrorHandler) {
 
         ConcurrentKafkaListenerContainerFactory<String, ListSuccessEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
 
         factory.setConsumerFactory(listSuccessConsumerFactory());
-        factory.setCommonErrorHandler(errorHandler);
+        factory.setCommonErrorHandler(kafkaErrorHandler);
 
         return factory;
     }
@@ -102,8 +102,8 @@ public class KafkaConfig {
     }
 
 
-    @Bean
-    public DefaultErrorHandler errorHandler(KafkaTemplate<Object, Object> genericKafkaTemplate) {
+    @Bean("kafkaErrorHandler")
+    public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<Object, Object> genericKafkaTemplate) {
 
         return new DefaultErrorHandler(
                 new DeadLetterPublishingRecoverer(genericKafkaTemplate)
