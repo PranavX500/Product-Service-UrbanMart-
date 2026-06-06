@@ -1,0 +1,39 @@
+# Maven target
+target/
+
+# Git
+.git
+.gitignore
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker
+Dockerfile
+docker-compose.yml
+
+# Build caches
+.mvn/wrapper/maven-wrapper.jar
+
+# Temporary files
+*.tmp
+*.swp
+
+
+# Environment files
+.env
+.env.*
+
+# IntelliJ
+*.iml
+
+# Test reports
+surefire-reports/

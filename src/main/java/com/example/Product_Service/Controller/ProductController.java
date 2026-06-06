@@ -96,7 +96,7 @@ public class ProductController {
             @RequestParam(defaultValue = "10") int size) {
 
         Page<ProductDto> productDtos =
-                productService.findProductPriceBetween(categories, maxprice, minprice, page, size);
+                productService.findProductPriceBetween(categories, minprice, maxprice, page, size);
 
         return ResponseEntity.ok(productDtos);
     }
