@@ -95,7 +95,7 @@ jobs:
 
       - name: Apply Kubernetes Manifests
         run: |
-          kubectl apply -f k8s/
+          kubectl apply -f K8s/
 
       - name: Update Kubernetes Deployment
         run: |
