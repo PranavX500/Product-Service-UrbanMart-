@@ -3,8 +3,9 @@ FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /workspace
 
 COPY pom.xml ./
-RUN mvn -q -DskipTests dependency:go-offline
 
+COPY checkstyle.xml ./
+RUN mvn -q -DskipTests dependency:go-offline
 COPY src ./src
 RUN mvn -q -DskipTests clean package
 RUN java -Djarmode=layertools -jar target/Product-Service-0.0.1-SNAPSHOT.jar extract
