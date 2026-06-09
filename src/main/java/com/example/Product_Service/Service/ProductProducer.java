@@ -9,13 +9,11 @@ public class ProductProducer {
 
     private final KafkaTemplate<String, ProductResponseEvent> kafkaTemplate;
 
-    public ProductProducer(KafkaTemplate<String, ProductResponseEvent> kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
+    public ProductProducer(final KafkaTemplate<String, ProductResponseEvent> template) {
+        this.kafkaTemplate = template;
     }
 
-    public void sendProductIds(ProductResponseEvent event) {
-        System.out.print(event);
+    public void sendProductIds(final ProductResponseEvent event) {
         kafkaTemplate.send("product-success-topic", event);
-        System.out.println("Sent event to Kafka: " + event);
     }
 }

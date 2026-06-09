@@ -1,7 +1,7 @@
 package com.example.Product_Service.Exception;
 
 public class InvalidCategoryException extends RuntimeException {
-    public InvalidCategoryException(String message) {
+    public InvalidCategoryException(final String message) {
         super(message);
     }
 }

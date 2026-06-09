@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,17 +14,9 @@ public class ApiError {
     private int status;
     private LocalDateTime timestamp;
 
-    public ApiError(String message, int status) {
-        this.message = message;
-        this.status = status;
+    public ApiError(final String errorMessage, final int errorStatus) {
+        this.message = errorMessage;
+        this.status = errorStatus;
         this.timestamp = LocalDateTime.now();
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 }

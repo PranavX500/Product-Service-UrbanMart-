@@ -44,7 +44,7 @@ class ProductServiceTest {
 
         when(productRepo.save(any(Product.class))).thenReturn(savedProduct);
 
-        ProductDto result = productService.Createproduct(request);
+        ProductDto result = productService.createProduct(request);
 
         assertEquals(1L, result.getProductId());
         assertEquals("Phone", result.getProductName());
@@ -112,7 +112,7 @@ class ProductServiceTest {
         when(productRepo.findById(3L)).thenReturn(Optional.of(existingProduct));
         when(productRepo.save(existingProduct)).thenReturn(existingProduct);
 
-        ProductDto result = productService.UpdateProduct(3L, updateRequest);
+        ProductDto result = productService.updateProduct(3L, updateRequest);
 
         assertEquals("New Phone", result.getProductName());
         assertEquals(25000.0, result.getPrice());
@@ -156,13 +156,13 @@ class ProductServiceTest {
     }
 
     @Test
-    void findProductLessThenPriceReturnsPagedDtos() {
+    void findProductLessThanPriceReturnsPagedDtos() {
         Page<Product> page = new PageImpl<>(
                 List.of(product(2L, "Mouse", 799.0, "Logitech", Categories.COMPUTER_ACCESSORIES))
         );
         when(productRepo.findProductsBelowPrice(eq(1000.0), any(Pageable.class))).thenReturn(page);
 
-        Page<ProductDto> result = productService.findProductLessThenPrice(1000.0, 0, 5);
+        Page<ProductDto> result = productService.findProductLessThanPrice(1000.0, 0, 5);
 
         assertEquals(1, result.getTotalElements());
         assertEquals("Mouse", result.getContent().get(0).getProductName());
