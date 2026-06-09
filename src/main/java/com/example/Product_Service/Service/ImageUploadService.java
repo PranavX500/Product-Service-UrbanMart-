@@ -1,16 +1,8 @@
 package com.example.Product_Service.Service;
 
-import com.example.Product_Service.Exception.ImageUploadException;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.example.Product_Service.Exception.ImageUploadException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,18 +16,15 @@ public class ImageUploadService {
     @Autowired
     private Cloudinary cloudinary;
 
-    public String uploadImage(MultipartFile file) throws IOException {
+    public String uploadImage(final MultipartFile file) throws IOException {
         if (file.isEmpty()) {
             throw new ImageUploadException("Image file is empty");
         }
 
-        Map uploadResult = cloudinary.uploader().upload(
+        Map<?, ?> uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
-                ObjectUtils.asMap("folder", "ecommerce_products")   
+                ObjectUtils.asMap("folder", "ecommerce_products")
         );
-
         return uploadResult.get("secure_url").toString();
     }
 }
-
-

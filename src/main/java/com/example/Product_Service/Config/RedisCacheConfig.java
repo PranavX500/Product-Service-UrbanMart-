@@ -27,9 +27,11 @@ import java.time.Duration;
 @Configuration
 @EnableCaching
 public class RedisCacheConfig {
-
-    private static final Logger log = LoggerFactory.getLogger(RedisCacheConfig.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(
+            RedisCacheConfig.class
+    );
     private static final String PRODUCTS_CACHE = "products";
+    private static final long CACHE_TTL_MINUTES = 10L;
 
     @Value("${app.cache.redis.enabled:true}")
     private boolean redisEnabled;
@@ -39,7 +41,6 @@ public class RedisCacheConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
         objectMapper.activateDefaultTyping(
                 BasicPolymorphicTypeValidator.builder()
                         .allowIfSubType("com.example.Product_Service")
@@ -49,88 +50,132 @@ public class RedisCacheConfig {
                 ObjectMapper.DefaultTyping.EVERYTHING,
                 JsonTypeInfo.As.PROPERTY
         );
-
-        GenericJackson2JsonRedisSerializer.registerNullValueSerializer(objectMapper, null);
+        GenericJackson2JsonRedisSerializer.registerNullValueSerializer(
+                objectMapper,
+                null
+        );
 
         GenericJackson2JsonRedisSerializer serializer =
                 new GenericJackson2JsonRedisSerializer(objectMapper);
 
         return RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(10))
+                .entryTtl(Duration.ofMinutes(CACHE_TTL_MINUTES))
                 .prefixCacheNameWith("v2::")
                 .disableCachingNullValues()
                 .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(serializer)
+                        RedisSerializationContext.SerializationPair.fromSerializer(
+                                serializer
+                        )
                 );
     }
 
     @Bean
     public CacheManager cacheManager(
-            RedisConnectionFactory redisConnectionFactory,
-            RedisCacheConfiguration redisCacheConfiguration
+            final RedisConnectionFactory redisConnectionFactory,
+            final RedisCacheConfiguration redisCacheConfiguration
     ) {
-        ConcurrentMapCacheManager fallbackCacheManager = new ConcurrentMapCacheManager(PRODUCTS_CACHE);
+        ConcurrentMapCacheManager fallbackCacheManager =
+                new ConcurrentMapCacheManager(PRODUCTS_CACHE);
 
         if (!redisEnabled) {
-            log.info("Redis cache is disabled by configuration. Using in-memory cache.");
+            LOGGER.info(
+                    "Redis cache is disabled by configuration. Using in-memory cache."
+            );
             return fallbackCacheManager;
         }
 
         if (!isRedisAvailable(redisConnectionFactory)) {
-            log.warn("Redis is unavailable. Falling back to in-memory cache.");
+            LOGGER.warn("Redis is unavailable. Falling back to in-memory cache.");
             return fallbackCacheManager;
         }
 
-        RedisCacheManager redisCacheManager = RedisCacheManager.builder(redisConnectionFactory)
+        RedisCacheManager redisCacheManager = RedisCacheManager.builder(
+                redisConnectionFactory
+        )
                 .cacheDefaults(redisCacheConfiguration)
                 .withCacheConfiguration(PRODUCTS_CACHE, redisCacheConfiguration)
                 .build();
 
-        log.info("Redis is available. Using Redis-backed cache.");
+        LOGGER.info("Redis is available. Using Redis-backed cache.");
         return redisCacheManager;
     }
 
-    // ✅ Only ONE error handler bean (no override now)
     @Bean
     public CacheErrorHandler cacheErrorHandler() {
         return new CacheErrorHandler() {
             @Override
-            public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
-                log.warn("Cache GET failed for cache '{}' and key '{}'. Continuing without cache.",
-                        cacheName(cache), key, exception);
+            public void handleCacheGetError(
+                    final RuntimeException exception,
+                    final Cache cache,
+                    final Object key
+            ) {
+                LOGGER.warn(
+                        "Cache GET failed for cache '{}' and key '{}'. Continuing without cache.",
+                        cacheName(cache),
+                        key,
+                        exception
+                );
             }
 
             @Override
-            public void handleCachePutError(RuntimeException exception, Cache cache, Object key, Object value) {
-                log.warn("Cache PUT failed for cache '{}' and key '{}'. Continuing without cache.",
-                        cacheName(cache), key, exception);
+            public void handleCachePutError(
+                    final RuntimeException exception,
+                    final Cache cache,
+                    final Object key,
+                    final Object value
+            ) {
+                LOGGER.warn(
+                        "Cache PUT failed for cache '{}' and key '{}'. Continuing without cache.",
+                        cacheName(cache),
+                        key,
+                        exception
+                );
             }
 
             @Override
-            public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
-                log.warn("Cache EVICT failed for cache '{}' and key '{}'. Continuing without cache.",
-                        cacheName(cache), key, exception);
+            public void handleCacheEvictError(
+                    final RuntimeException exception,
+                    final Cache cache,
+                    final Object key
+            ) {
+                LOGGER.warn(
+                        "Cache EVICT failed for cache '{}' and key '{}'. Continuing without cache.",
+                        cacheName(cache),
+                        key,
+                        exception
+                );
             }
 
             @Override
-            public void handleCacheClearError(RuntimeException exception, Cache cache) {
-                log.warn("Cache CLEAR failed for cache '{}'. Continuing without cache.",
-                        cacheName(cache), exception);
+            public void handleCacheClearError(
+                    final RuntimeException exception,
+                    final Cache cache
+            ) {
+                LOGGER.warn(
+                        "Cache CLEAR failed for cache '{}'. Continuing without cache.",
+                        cacheName(cache),
+                        exception
+                );
             }
         };
     }
 
-    private boolean isRedisAvailable(RedisConnectionFactory redisConnectionFactory) {
+    private boolean isRedisAvailable(
+            final RedisConnectionFactory redisConnectionFactory
+    ) {
         try (RedisConnection connection = redisConnectionFactory.getConnection()) {
             connection.ping();
             return true;
         } catch (Exception exception) {
-            log.warn("Redis health check failed during cache manager initialization: {}", exception.getMessage());
+            LOGGER.warn(
+                    "Redis health check failed during cache manager initialization: {}",
+                    exception.getMessage()
+            );
             return false;
         }
     }
 
-    private String cacheName(Cache cache) {
+    private String cacheName(final Cache cache) {
         return cache != null ? cache.getName() : "unknown";
     }
 }
