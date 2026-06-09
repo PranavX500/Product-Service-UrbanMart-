@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: product-service
+  namespace: urbanmart
+
+spec:
+  selector:
+    app: product-service
+
+  ports:
+    - port: 8085
+      targetPort: 8085
+      protocol: TCP
+
+  type: ClusterIP
