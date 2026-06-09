@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: product-service
+  namespace: urbanmart
+
+spec:
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+
+  selector:
+    matchLabels:
+      app: product-service
+
+  template:
+    metadata:
+      labels:
+        app: product-service
+
+    spec:
+      containers:
+        - name: product-service
+
+          image: asia-south1-docker.pkg.dev/urban-mart-497808/urban-mart-microservices-images/product-service:latest
+
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8085
+
+          env:
+            # Application
+            - name: SPRING_APPLICATION_NAME
+              value: PRODUCT-SERVICE
+
+            - name: SERVER_PORT
+              value: "8085"
+
+            # MySQL
+            - name: DB_URL
+              valueFrom:
+                 secretKeyRef:
+                   name: product-secret
+                   key: DB_URL 
+                    
+             
+
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_USERNAME
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_PASSWORD
+
+            # Kafka
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka-service:9092
+
+            # Redis
+            - name: REDIS_HOST
+              value: redis-service
+
+            - name: REDIS_PORT
+              value: "6379"
+
+            # Cloudinary
+            - name: CLOUDINARY_CLOUD_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: cloudinary-secret
+                  key: CLOUDINARY_CLOUD_NAME
+
+            - name: CLOUDINARY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloudinary-secret
+                  key: CLOUDINARY_API_KEY
+
+            - name: CLOUDINARY_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cloudinary-secret
+                  key: CLOUDINARY_API_SECRET
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "250m"
+              memory: "512Mi"

@@ -1,0 +1,137 @@
+name: Deploy User Service to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+  IMAGE_NAME: product-service
+  REPOSITORY: urban-mart-microservices-images
+  GAR_REGION: asia-south1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Build, Test and Quality Checks
+        run: mvn clean verify
+
+
+      - name: SonarQube Scan
+        env:
+         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
+          -Dsonar.token=$SONAR_TOKEN
+       
+
+     
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${GAR_REGION}-docker.pkg.dev --quiet
+
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t ${GAR_REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:${{ github.sha }} \
+            -t ${GAR_REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:latest \
+            .
+      -  name: Install Trivy
+         run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+
+          wget -qO- https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+
+          trivy --version
+
+      - name: Scan Docker Image
+        run: |
+         trivy image \
+          --severity HIGH,CRITICAL \
+          --exit-code 0 \
+          ${GAR_REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:${{ github.sha }}
+          
+
+      - name: Push Docker Image
+        run: |
+          docker push ${GAR_REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:${{ github.sha }}
+          docker push ${GAR_REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:latest
+
+      - name: Apply Kubernetes Manifests
+        run: |
+          kubectl apply -f k8s/
+
+      - name: Update Kubernetes Deployment
+        run: |
+          kubectl set image deployment/user-service \
+            user-service=${GAR_REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:${{ github.sha }} \
+            -n urbanmart
+
+      - name: Verify Rollout
+        run: |
+          kubectl rollout status deployment/user-service \
+            -n urbanmart \
+            --timeout=600s
+
+      - name: Show Deployment
+        run: |
+          kubectl get deployment user-service -n urbanmart
+
+      - name: Show Pods
+        run: |
+          kubectl get pods -n urbanmart -o wide
+
+      - name: Show Services
+        run: |
+          kubectl get svc -n urbanmart
+
+      - name: Debug Deployment
+        if: failure()
+        run: |
+          kubectl describe deployment user-service -n urbanmart
+
+      - name: Debug Pods
+        if: failure()
+        run: |
+          kubectl describe pods -n urbanmart
+
+      - name: Debug Events
+        if: failure()
+        run: |
+          kubectl get events -n urbanmart --sort-by=.metadata.creationTimestamp
