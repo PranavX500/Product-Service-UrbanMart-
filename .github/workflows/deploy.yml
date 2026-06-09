@@ -1,4 +1,4 @@
-name: Deploy User Service to GKE
+name: Deploy Product Service to GKE
 
 on:
   push:
@@ -99,19 +99,19 @@ jobs:
 
       - name: Update Kubernetes Deployment
         run: |
-          kubectl set image deployment/user-service \
+          kubectl set image deployment/product-service \
             user-service=${GAR_REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:${{ github.sha }} \
             -n urbanmart
 
       - name: Verify Rollout
         run: |
-          kubectl rollout status deployment/user-service \
+          kubectl rollout status deployment/product-service \
             -n urbanmart \
             --timeout=600s
 
       - name: Show Deployment
         run: |
-          kubectl get deployment user-service -n urbanmart
+          kubectl get deployment product-service  -n urbanmart
 
       - name: Show Pods
         run: |
@@ -124,7 +124,7 @@ jobs:
       - name: Debug Deployment
         if: failure()
         run: |
-          kubectl describe deployment user-service -n urbanmart
+          kubectl describe deployment product-service  -n urbanmart
 
       - name: Debug Pods
         if: failure()
