@@ -100,7 +100,7 @@ jobs:
       - name: Update Kubernetes Deployment
         run: |
           kubectl set image deployment/product-service \
-            user-service=${GAR_REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:${{ github.sha }} \
+            product-service=${GAR_REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE_NAME:${{ github.sha }} \
             -n urbanmart
 
       - name: Verify Rollout
